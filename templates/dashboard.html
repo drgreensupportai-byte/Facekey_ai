@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}User Dashboard - FaceKey AI{% endblock %}
+
+{% block content %}
+<style>
+    .dashboard-card {
+        max-width: 650px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .user-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: rgba(56, 189, 248, 0.1);
+        border: 1px solid var(--accent-color, #38bdf8);
+        border-radius: 20px;
+        color: #38bdf8;
+        font-weight: bold;
+        margin-bottom: 1.5rem;
+    }
+
+    .timer-banner {
+        background: rgba(251, 191, 36, 0.1);
+        border-left: 4px solid #fbbf24;
+        color: #fde68a;
+        padding: 0.75rem 1rem;
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+    }
+
+    .timer-count {
+        font-weight: bold;
+        color: #fbbf24;
+    }
+
+    .logs-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .logs-table th, .logs-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .logs-table th {
+        color: #94a3b8;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+    .status-success {
+        background: rgba(46, 248, 160, 0.15);
+        color: #2ef8a0;
+    }
+
+    .status-failed {
+        background: rgba(255, 77, 77, 0.15);
+        color: #ff4d4d;
+    }
+
+    .actions {
+        margin-top: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn-logout {
+        background: #ef4444;
+        color: #fff;
+        padding: 0.6rem 1.2rem;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background 0.2s ease;
+    }
+
+    .btn-logout:hover {
+        background: #dc2626;
+    }
+</style>
+
+<div class="dashboard-card">
+    <div class="user-badge">
+        <span>👤 User Profile</span>
+    </div>
+
+    <h2>Murakaza neza, {{ user.username }}!</h2>
+    <p style="color: #94a3b8;">You have successfully authenticated using FaceKey AI Biometrics.</p>
+
+    <!-- Step 5 Requirement: Configurable Auto-Logout Countdown Banner -->
+    <div class="timer-banner">
+        ⏱️ Session timeout active: Auto-logging out in <span id="countdown" class="timer-count">{{ AUTO_LOGOUT_SECONDS }}</span> seconds to allow continuous scanner cycling.
+    </div>
+
+    <div style="margin-top: 2rem;">
+        <h3>Recent Access History</h3>
+        {% if logs %}
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Status</th>
+                        <th>Confidence</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ log.event_type }}</td>
+                        <td>
+                            <span class="status-badge {% if log.success %}status-success{% else %}status-failed{% endif %}">
+                                {% if log.success %}SUCCESS{% else %}FAILED{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if log.confidence_score %}
+                                {{ (log.confidence_score * 100) | round(1) }}%
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p style="color: #64748b; font-style: italic;">No recent authentication logs found.</p>
+        {% endif %}
+    </div>
+
+    <div class="actions">
+        <a href="{{ url_for('logout') }}" class="btn-logout">Sohoka (Logout)</a>
+    </div>
+</div>
+
+<script>
+    // Step 5: Read configured timeout duration from template context
+    let timeLeft = {{ AUTO_LOGOUT_SECONDS | default(5) }};
+    const countdownEl = document.getElementById('countdown');
+
+    const timer = setInterval(() => {
+        timeLeft -= 1;
+        if (countdownEl) {
+            countdownEl.innerText = timeLeft;
+        }
+
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            window.location.href = "{{ url_for('logout') }}";
+        }
+    }, 1000);
+</script>
+{% endblock %}

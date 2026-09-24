@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Admin Login - FaceKey AI{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 450px; margin: 3rem auto; text-align: left;">
+    <h2>🔐 Secret Admin Access</h2>
+    <p style="color: #94a3b8; font-size: 0.9rem;">
+        Kwinjira mu bice by'ubuyobozi ukoresheje izina n'ijambo ry'ibanga.
+    </p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #f87171; padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.9rem;">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form action="/secret/sifa/togy/admin" method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
+        <div>
+            <label for="username" style="display: block; margin-bottom: 0.4rem; color: #cbd5e1; font-size: 0.9rem;">Username</label>
+            <input type="text" id="username" name="username" required placeholder="Enter admin username" style="width: 100%; padding: 0.7rem; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; font-size: 0.95rem;">
+        </div>
+
+        <div>
+            <label for="password" style="display: block; margin-bottom: 0.4rem; color: #cbd5e1; font-size: 0.9rem;">Password</label>
+            <input type="password" id="password" name="password" required placeholder="Enter admin password" style="width: 100%; padding: 0.7rem; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #f8fafc; font-size: 0.95rem;">
+        </div>
+
+        <button type="submit" class="btn" style="background: #0284c7; color: white; border: none; padding: 0.75rem; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 0.5rem; font-size: 1rem;">
+            Authenticate Admin
+        </button>
+    </form>
+</div>
+{% endblock %}

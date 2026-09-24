@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Home - FaceKey AI{% endblock %}
+{% block content %}
+<div class="hero">
+    <h1>Kwemeza isura idafite ijambo ry'ibanga</h1>
+    <p>Kwemeza amakuru y’ubuzima bwite mu buryo bwizewe kandi bubungabunga ubuzima bwite hakoreshejwe ubuhanga bw’ubukorano.</p>
+    <div class="cta-buttons">
+        <a href="{{ url_for('consent_page') }}" class="btn btn-primary">Tangira</a>
+        <a href="{{ url_for('privacy_notice') }}" class="btn btn-secondary">Soma Amatangazo Yerekeye ubuzima bwite</a>
+    </div>
+</div>
+{% endblock %}

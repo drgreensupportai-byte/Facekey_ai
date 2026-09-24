@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Privacy Notice - FaceKey AI{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>🔒 Itangazo ry'ubuzima bwite bwa Biometric</h2>
+    <p><strong>Verisiyo:</strong> {{ consent_version }}</p>
+    <hr>
+    <h3>1. Intego yo gukusanya amakuru</h3>
+    <p>FaceKey AI ikusanya amakuru y’umubiri w’umuntu ku maso gusa kugira ngo imenyekanishe umukoresha kandi yemeze nta jambo ryibanga.</p>
+    
+    <h3>2. Gutunganya amakuru y'umuntu y'Ibanga (biometrics) no kugabanya amakuru akusanywa</h3>
+    <p>We do <strong>NOT</strong> store raw face photographs. Your facial image is processed locally into a mathematical 128-dimensional embedding vector and instantly discarded from memory.</p>
+    
+    <h3>3. Umutekano n'Ububiko</h3>
+    <p>Vekteri za Biometric zishyirwa mu buryo bwa "encryption" hakoreshejwe uburyo bwa AES-128 Fernet mbere yo kubikwa muri database yacu. Amakuru ntashobora guhindurwa mu buryo bwa "encryption" nta funguzo z'umutekano wa porogaramu.</p>
+
+    <h3>4. Politiki yo kubika amakuru</h3>
+    <p>Amakuru y’ibimenyetso byihariye by’umubiri (biometric data) abikwa mu gihe kitarenze iminsi {{ retention_days }} cyangwa kugeza igihe ugaragarije ku mugaragaro ko utakibishaka kandi ugasaba ko konti yawe isibwa.</p>
+    
+    <div class="actions">
+        <a href="{{ url_for('consent_page') }}" class="btn btn-primary">Komeza ugere ku burenganzira bwo kwiyandikisha</a>
+    </div>
+</div>
+{% endblock %}

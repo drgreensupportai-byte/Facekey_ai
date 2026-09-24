@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FaceKey AI - Admin AI Training</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            background-color: #0b0f19;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e5e7eb;
+            margin: 0;
+            padding: 20px;
+        }
+        .train-container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 30px;
+            background: #111827;
+            color: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #1f2937;
+            box-shadow: 0 4px 20px rgba(0, 255, 204, 0.1);
+        }
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1f2937;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .btn-back {
+            background: #1f2937;
+            color: #00ffcc;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid #00ffcc;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+        .btn-back:hover {
+            background: #00ffcc;
+            color: #000;
+        }
+
+        /* Modal & Form Styles */
+        .add-user-card {
+            background: #1f2937;
+            border: 1px solid #374151;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #9ca3af;
+        }
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            background: #0b0f19;
+            border: 1px solid #374151;
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #00ffcc;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .btn-add-user {
+            background: #00ffcc;
+            color: #000000;
+            font-weight: bold;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+        .btn-add-user:hover {
+            background: #00cc99;
+        }
+
+        .btn-train {
+            background-color: #00ffcc;
+            color: #000;
+            font-weight: bold;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: 0.3s;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
+        }
+        .btn-train:hover {
+            background-color: #00cc99;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+        }
+        .btn-train:disabled {
+            background-color: #374151;
+            color: #9ca3af;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .user-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+            margin: 20px 0 30px 0;
+        }
+        .user-card {
+            background: #1f2937;
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #374151;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .user-card:hover {
+            transform: translateY(-4px);
+            border-color: #00ffcc;
+        }
+        .image-frame-container {
+            width: 100%;
+            height: 140px;
+            background: #0b0f19;
+            border-radius: 8px;
+            border: 1px solid #374151;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 12px;
+            position: relative;
+        }
+        .image-frame-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+            border-radius: 6px;
+            transition: 0.3s;
+        }
+        .img-type-badge {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #00ffcc;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #00ffcc;
+            text-transform: uppercase;
+        }
+        .user-label {
+            font-weight: bold;
+            color: #00ffcc;
+            font-size: 16px;
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+        .user-email {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+        .btn-single-retrain {
+            background: transparent;
+            color: #38bdf8;
+            border: 1px solid #38bdf8;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+        }
+        .btn-single-retrain:hover {
+            background: #38bdf8;
+            color: #000;
+        }
+        .status-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="train-container">
+        <div class="header-section">
+            <div>
+                <h2 style="margin: 0; color: #00ffcc;">🤖 FaceKey AI Model Trainer</h2>
+                <p style="margin: 5px 0 0 0; color: #9ca3af; font-size: 14px;">
+                    Kwigisha AI binyuze mu mashusho n'ibirango (JPG, PNG, WEBP, GIF, SVG, AVIF + Text Labels).
+                </p>
+            </div>
+            <a href="/admin" class="btn-back">⬅ Muri Admin Dashboard</a>
+        </div>
+
+        <div class="add-user-card">
+            <h3 style="margin-top: 0; color: #00ffcc;">➕ Ongeza Umukoresha Mushya (Add User)</h3>
+            <form id="addUserForm" onsubmit="submitNewUser(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Izina (Username / Full Name) *</label>
+                        <input type="text" id="add_username" name="username" class="form-control" required placeholder="Urugero: Eric">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="add_email" name="email" class="form-control" placeholder="eric@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Ijambo ry'ibanga (Password) *</label>
+                        <input type="password" id="add_password" name="password" class="form-control" required placeholder="••••••••">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Ifoto ya Profile / Dataset Image (JPG, PNG, WEBP, etc.) *</label>
+                    <input type="file" id="add_profile_image" name="profile_image" accept="image/*" class="form-control" required>
+                </div>
+                <button type="submit" class="btn-add-user" id="addUserBtn">🚀 Bika Umukoresha Mushya</button>
+            </form>
+            <div id="addUserStatus" style="margin-top: 10px; display: none; font-size: 14px;"></div>
+        </div>
+
+        <h3>📂 Dataset & Registered Users</h3>
+        
+        <div class="user-grid">
+            {% if users %}
+                {% for u in users %}
+                    {% set username_val = u.username if u.username is defined else u %}
+                    {% set user_id_val = u.id if u.id is defined else None %}
+                    
+                    <div class="user-card">
+                        <div class="image-frame-container">
+                            <img id="img-{{ loop.index }}" 
+                                 src="{{ url_for('serve_dataset_image', filename=username_val ~ '.jpg') }}" 
+                                 alt="{{ username_val }}"
+                                 data-username="{{ username_val }}"
+                                 onload="detectImgType(this)"
+                                 onerror="tryNextImgFormat(this, '{{ username_val }}')">
+                            <span class="img-type-badge" id="badge-{{ loop.index }}">IMG</span>
+                        </div>
+
+                        <div class="user-label">🏷️ {{ username_val }}</div>
+                        <div class="user-email">{{ u.email if u.email is defined else 'dataset/file' }}</div>
+                        
+                        {% if user_id_val %}
+                            <button class="btn-single-retrain" onclick="retrainSingleUser({{ user_id_val }}, '{{ username_val }}')">
+                                🔄 Retrain {{ username_val }}
+                            </button>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: #9ca3af; grid-column: 1 / -1;">Nta user cyangwa dataset data iragera muri system.</p>
+            {% endif %}
+        </div>
+
+        <button class="btn-train" id="startTrainBtn" onclick="startTraining()">🚀 Tangira Kwigisha AI YOSE (Bulk Retrain Model)</button>
+
+        <div id="statusBox" class="status-box"></div>
+    </div>
+
+   <script>
+    const supportedExtensions = ['.jpg', '.png', '.jpeg', '.webp', '.gif', '.svg', '.avif', '.bmp'];
+
+    /**
+     * Helper function to safely process fetch responses to JSON
+     * Prevents "SyntaxError: Unexpected token '<'" when HTML error pages are returned.
+     */
+    async function handleJsonResponse(response) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            if (!response.ok && !data.message) {
+                data.message = `Server returned HTTP status ${response.status}`;
+            }
+            return data;
+        } else {
+            const rawText = await response.text();
+            console.error('Non-JSON Response Received:', rawText);
+            throw new Error(`Server Error (${response.status}): Expected JSON but received HTML/Text.`);
+        }
+    }
+
+    function submitNewUser(e) {
+        e.preventDefault();
+        const form = document.getElementById('addUserForm');
+        const btn = document.getElementById('addUserBtn');
+        const statusDiv = document.getElementById('addUserStatus');
+        const formData = new FormData(form);
+
+        btn.disabled = true;
+        btn.innerText = '⏳ Arimo kubikwa...';
+        statusDiv.style.display = 'block';
+        statusDiv.style.color = '#38bdf8';
+        statusDiv.innerText = 'Tegereza kidogo...';
+
+        fetch('/admin/add-user', {
+            method: 'POST',
+            body: formData
+        })
+        .then(handleJsonResponse)
+        .then(data => {
+            if(data.success) {
+                statusDiv.style.color = '#10b981';
+                statusDiv.innerText = '✅ ' + data.message;
+                form.reset();
+                setTimeout(() => { location.reload(); }, 1200);
+            } else {
+                statusDiv.style.color = '#ef4444';
+                statusDiv.innerText = '❌ ' + (data.message || 'Harabaye ikosa.');
+                btn.disabled = false;
+                btn.innerText = '🚀 Bika Umukoresha Mushya';
+            }
+        })
+        .catch(err => {
+            statusDiv.style.color = '#ef4444';
+            statusDiv.innerText = '❌ ' + err.message;
+            btn.disabled = false;
+            btn.innerText = '🚀 Bika Umukoresha Mushya';
+        });
+    }
+
+    function tryNextImgFormat(imgElem, username) {
+        let attemptIndex = parseInt(imgElem.getAttribute('data-attempt') || '0');
+        
+        if (attemptIndex < supportedExtensions.length - 1) {
+            attemptIndex++;
+            imgElem.setAttribute('data-attempt', attemptIndex);
+            const nextExt = supportedExtensions[attemptIndex];
+            imgElem.src = `/dataset/${username}${nextExt}`;
+        } else {
+            imgElem.onerror = null;
+            imgElem.src = 'https://via.placeholder.com/150/111827/00ffcc?text=No+Image';
+            const badge = imgElem.parentElement.querySelector('.img-type-badge');
+            if (badge) badge.innerText = 'NONE';
+        }
+    }
+
+    function detectImgType(imgElem) {
+        const badge = imgElem.parentElement.querySelector('.img-type-badge');
+        if (!badge) return;
+        const src = imgElem.src.toLowerCase();
+        if (src.includes('.png')) badge.innerText = 'PNG';
+        else if (src.includes('.jpg') || src.includes('.jpeg')) badge.innerText = 'JPG';
+        else if (src.includes('.webp')) badge.innerText = 'WEBP';
+        else if (src.includes('.gif')) badge.innerText = 'GIF';
+        else if (src.includes('.svg')) badge.innerText = 'SVG';
+        else if (src.includes('.avif')) badge.innerText = 'AVIF';
+        else if (src.includes('.bmp')) badge.innerText = 'BMP';
+        else badge.innerText = 'IMG';
+    }
+
+    function startTraining() {
+        const btn = document.getElementById('startTrainBtn');
+        const statusBox = document.getElementById('statusBox');
+
+        btn.disabled = true;
+        btn.innerText = '⏳ AI irimo kwiga (Training in progress)...';
+        statusBox.style.display = 'block';
+        statusBox.style.background = '#1f2937';
+        statusBox.style.color = '#00ffcc';
+        statusBox.style.border = '1px solid #00ffcc';
+        statusBox.innerText = 'Gusoma amafoto ari muri /dataset ubwoko bwose no kwigisha Model (Feature Embeddings)...';
+
+        fetch('/api/train-model', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(handleJsonResponse)
+        .then(data => {
+            if(data.status === 'success' || data.success) {
+                statusBox.style.background = '#065f46';
+                statusBox.style.color = '#a7f3d0';
+                statusBox.style.border = '1px solid #10b981';
+                statusBox.innerText = '✅ ' + (data.message || 'AI Retrained successfully!');
+            } else {
+                statusBox.style.background = '#991b1b';
+                statusBox.style.color = '#fecaca';
+                statusBox.style.border = '1px solid #ef4444';
+                statusBox.innerText = '❌ Ikosa: ' + data.message;
+            }
+        })
+        .catch(err => {
+            statusBox.style.background = '#991b1b';
+            statusBox.style.color = '#fecaca';
+            statusBox.style.border = '1px solid #ef4444';
+            statusBox.innerText = '❌ ' + err.message;
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerText = '🚀 Tangira Kwigisha AI YOSE (Bulk Retrain Model)';
+        });
+    }
+
+    function retrainSingleUser(userId, username) {
+        const statusBox = document.getElementById('statusBox');
+        statusBox.style.display = 'block';
+        statusBox.style.background = '#1f2937';
+        statusBox.style.color = '#38bdf8';
+        statusBox.style.border = '1px solid #38bdf8';
+        statusBox.innerText = `⏳ Retraining model specific to '${username}'...`;
+
+        fetch(`/admin/retrain/${userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(handleJsonResponse)
+        .then(data => {
+            if(data.success) {
+                statusBox.style.background = '#065f46';
+                statusBox.style.color = '#a7f3d0';
+                statusBox.style.border = '1px solid #10b981';
+                statusBox.innerText = `✅ ${data.message}`;
+            } else {
+                statusBox.style.background = '#991b1b';
+                statusBox.style.color = '#fecaca';
+                statusBox.style.border = '1px solid #ef4444';
+                statusBox.innerText = `❌ Error: ${data.message}`;
+            }
+        })
+        .catch(err => {
+            statusBox.style.background = '#991b1b';
+            statusBox.style.color = '#fecaca';
+            statusBox.style.border = '1px solid #ef4444';
+            statusBox.innerText = `❌ ${err.message}`;
+        });
+    }
+</script>
+</body>
+</html>

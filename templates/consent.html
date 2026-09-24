@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Biometric Consent - FaceKey AI{% endblock %}
+
+{% block content %}
+<div class="consent-container fade-in">
+    <div class="card shadow-lg p-6 rounded-xl border border-gray-700 bg-gray-900 text-white max-w-2xl mx-auto my-8">
+        
+        <!-- Header Section -->
+        <div class="consent-header mb-6 border-b border-gray-800 pb-4">
+            <h2 class="text-2xl font-bold text-cyan-400 flex items-center gap-2">
+                <span>📄</span> Ifishi y'Ubwemere bw'Ibintu Bigaragara (Biometric Consent)
+            </h2>
+            <p class="text-sm text-gray-400 mt-1">
+                Nyamuneka suzuma amabwiriza akurikira wemere igukoreshwa ry'amakuru yawe mbere yo gukomeza gushyiraho kamera.
+            </p>
+        </div>
+
+        <!-- Privacy & Processing Notice Box -->
+        <div class="consent-box bg-gray-800 p-5 rounded-lg border border-gray-700 mb-6 text-sm leading-relaxed space-y-3">
+            <p class="text-gray-200">
+                Mu gushyira akamenyetso mu gasanduku kari hepfo, uba wemeye ku mugaragaro ko <strong>FaceKey AI</strong> ifata ikanahindura mu buryo bw'ibanga bukiingiye <em>(AES-128 / Fernet encryption)</em> imibare igaragaza imiterere y'isura yawe, hagamijwe kugenzura no kwemeza umwirondoro wawe utagomba gukoresha ijambo ry'ibanga (passwordless authentication).
+            </p>
+            
+            <ul class="list-disc pl-5 space-y-2 text-gray-300">
+                {% if config.ALLOW_RAW_IMAGE_STORAGE %}
+                <li>Amashusho y'isura aguma mu bubiko bukingiye kandi anasimbuzwa imibare (embeddings) mu buryo bw'ibanga.</li>
+                {% else %}
+                <li><strong>Nta mafoto y'umwimerere (raw photos) abikwa:</strong> Amashusho ahita ahindurwamo imibare 512-D, agahita asibwa mu mwanya muto.</li>
+                {% endif %}
+                <li>Ushobora gukuraho uburenganzira no gusiba icyitegererezo cyawe cya biometric igihe icyo ari cyo cyose mu Igenamiterere (Settings).</li>
+                <li>Guhindura amakuru agengwa n'amabwiriza y'ubwisanzure n'umSecurity <strong>v{{ config.CONSENT_VERSION or '1.0' }}</strong>.</li>
+            </ul>
+        </div>
+
+        <!-- Consent Processing Form -->
+        <form action="{{ url_for('process_consent') }}" method="POST" id="consentForm" class="space-y-6">
+            <!-- CSRF Protection Token -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else g.csrf_token }}">
+            <input type="hidden" name="consent_version" value="{{ config.CONSENT_VERSION or '1.0' }}">
+
+            <!-- Consent Checkbox Group -->
+            <div class="form-group checkbox-group flex items-start space-x-3 bg-gray-950 p-4 rounded-md border border-gray-800">
+                <input type="checkbox" 
+                       id="consent_check" 
+                       name="consent_given" 
+                       value="true" 
+                       required 
+                       class="mt-1 h-5 w-5 rounded border-gray-700 text-cyan-500 focus:ring-cyan-400 focus:ring-offset-gray-900 cursor-pointer">
+                
+                <label for="consent_check" class="text-sm text-gray-200 cursor-pointer select-none">
+                    <strong>Nemeye kandi ntange uburenganzira</strong> bwo gukusanya, gutunganya, no kubika mu buryo bw'ibanga amakuru yanjye yihariye yerekeye imiterere y'isura (biometric information) mu ntego zo kwinjira mu sisitemu.
+                </label>
+            </div>
+
+            <!-- Submission Actions -->
+            <div class="form-actions flex flex-col sm:flex-row gap-4">
+                <button type="submit" 
+                        id="submitBtn" 
+                        class="btn btn-primary w-full py-3 px-6 bg-cyan-500 hover:bg-cyan-600 disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold rounded-lg transition duration-200 flex items-center justify-center gap-2" 
+                        disabled>
+                    <span>Komeza ahandikirwa kamera</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Inline Interactive Script for Instant UI Binding -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const consentCheck = document.getElementById('consent_check');
+    const submitBtn = document.getElementById('submitBtn');
+    const consentForm = document.getElementById('consentForm');
+
+    if (consentCheck && submitBtn) {
+        // Dynamic Enable/Disable logic
+        consentCheck.addEventListener('change', function() {
+            submitBtn.disabled = !this.checked;
+        });
+
+        // Prevent double submission
+        consentForm.addEventListener('submit', function() {
+            if (consentCheck.checked) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `
+                    <svg class="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Bira-tunganijwa...</span>
+                `;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

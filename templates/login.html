@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+{% block title %}Passwordless Face & Voice Login - FaceKey AI{% endblock %}
+
+{% block content %}
+<!-- Include MediaPipe scripts for Face Landmark Detection -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+<style>
+    /* Wrapper container for layering loader ring behind the video frame */
+    .biometric-wrapper {
+        position: relative;
+        width: 340px;
+        height: 340px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Video frame container */
+    .video-container {
+        position: relative;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 4px solid var(--accent-color, #38bdf8);
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+        z-index: 2; /* Keeps camera stream in front */
+    }
+
+    #webcam, #mesh-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1); /* Mirror camera output */
+    }
+
+    /* Outer Loader Ring (Positioned behind video frame) */
+    .outer-loader-ring {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 340px;
+        height: 340px;
+        border-radius: 50%;
+        border: 4px solid rgba(56, 189, 248, 0.15);
+        border-top: 4px solid #38bdf8;
+        border-right: 4px solid #38bdf8;
+        z-index: 1; /* Positioned behind camera frame */
+        display: none;
+        animation: slowRotate 1.8s linear infinite; /* Accelerated rotation for feedback */
+    }
+
+    @keyframes slowRotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .status-box {
+        margin-top: 1.5rem;
+        font-weight: bold;
+        transition: color 0.4s ease;
+    }
+</style>
+
+<div class="card text-center">
+    <h2>🔑 FaceKey MFA Login</h2>
+    <p>Reba neza muri kamera kandi uvuge mu gihe scanning irimo gukora.</p>
+
+    <div class="biometric-wrapper">
+        <!-- Outer Loading Spinner (Positioned Behind) -->
+        <div id="outer-loader" class="outer-loader-ring"></div>
+
+        <!-- Inner Video Frame Container -->
+        <div class="video-container">
+            <video id="webcam" autoplay playsinline muted></video>
+            <canvas id="mesh-canvas"></canvas>
+            <canvas id="capture-canvas" width="320" height="240" style="display:none;"></canvas>
+        </div>
+    </div>
+
+    <div id="status-msg" class="status-box">
+        Initializing camera & microphone...
+    </div>
+</div>
+
+<script>
+    const AUTO_LOGOUT_SECONDS = {{ AUTO_LOGOUT_SECONDS | default(5) }};
+    const SCAN_INTERVAL_MS = 2500; // Accelerated scan cycle (2.5 seconds)
+    const AUDIO_RECORD_MS = 1200;  // Optimized audio clip length (1.2 seconds)
+
+    const video = document.getElementById('webcam');
+    const meshCanvas = document.getElementById('mesh-canvas');
+    const captureCanvas = document.getElementById('capture-canvas');
+    const outerLoader = document.getElementById('outer-loader');
+    const statusMsg = document.getElementById('status-msg');
+    const meshCtx = meshCanvas.getContext('2d');
+
+    let scanInterval = null;
+    let isProcessing = false;
+    let mediaStream = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let cameraInstance = null;
+    let dynamicLivenessPassed = false;
+
+    // Dynamically adjust canvas dimensions to lower resource usage
+    function resizeCanvas() {
+        meshCanvas.width = video.videoWidth || 320;
+        meshCanvas.height = video.videoHeight || 240;
+    }
+
+    // Initialize MediaPipe FaceMesh Engine with speed optimizations
+    const faceMesh = new FaceMesh({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+    });
+
+    faceMesh.setOptions({
+        maxNumFaces: 1,
+        refineLandmarks: false, // Turn off landmark refinement for ultra-fast performance
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+    });
+
+    // Render Mesh Dots over Detected Faces & Evaluate Liveness
+    faceMesh.onResults((results) => {
+        resizeCanvas();
+        meshCtx.clearRect(0, 0, meshCanvas.width, meshCanvas.height);
+
+        if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+            const landmarks = results.multiFaceLandmarks[0];
+            dynamicLivenessPassed = landmarks.length >= 468;
+
+            for (const landmark of landmarks) {
+                const x = landmark.x * meshCanvas.width;
+                const y = landmark.y * meshCanvas.height;
+
+                meshCtx.beginPath();
+                meshCtx.arc(x, y, 1.0, 0, 2 * Math.PI);
+                meshCtx.fillStyle = '#38bdf8'; // Glowing cyan dots
+                meshCtx.fill();
+            }
+        } else {
+            dynamicLivenessPassed = false;
+        }
+    });
+
+    // Activate Camera & Microphone Streams
+    navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 30 } }, 
+        audio: true 
+    })
+    .then(stream => { 
+        mediaStream = stream;
+        video.srcObject = stream;
+
+        statusMsg.innerText = "⚡ Reba mu kamera... Kwinjira birimo gukorwa...";
+        statusMsg.style.color = "#38bdf8";
+
+        // Feed video frame stream into MediaPipe FaceMesh
+        cameraInstance = new Camera(video, {
+            onFrame: async () => {
+                if (video && video.readyState >= 2) {
+                    await faceMesh.send({ image: video });
+                }
+            },
+            width: 320,
+            height: 240
+        });
+        cameraInstance.start();
+
+        // Optimized Auto-scan Cycle
+        scanInterval = setInterval(autoScanAndLogin, SCAN_INTERVAL_MS);
+    })
+    .catch(err => {
+        statusMsg.innerText = "Ikosa ku gufata camera cyangwa mic: " + err.message;
+        statusMsg.style.color = "#f87171";
+    });
+
+    function autoScanAndLogin() {
+        if (isProcessing || !video || video.readyState < 2) return;
+        isProcessing = true;
+
+        // Display Outer Loader Ring
+        outerLoader.style.display = 'block';
+
+        statusMsg.innerText = "Kugenzura umutwe n'ijwi... Tegereza gato.";
+        statusMsg.style.color = "#38bdf8";
+
+        // 1. Capture Low-Weight JPEG Frame (0.6 compression quality for speed)
+        const captureCtx = captureCanvas.getContext('2d');
+        captureCanvas.width = 320;
+        captureCanvas.height = 240;
+        captureCtx.drawImage(video, 0, 0, 320, 240);
+        const imageData = captureCanvas.toDataURL('image/jpeg', 0.6);
+
+        // 2. Capture Short Audio Clip (1.2 seconds)
+        audioChunks = [];
+        try {
+            const audioTracks = mediaStream.getAudioTracks();
+            if (audioTracks.length > 0 && audioTracks[0].enabled) {
+                mediaRecorder = new MediaRecorder(mediaStream);
+            } else {
+                mediaRecorder = null;
+            }
+        } catch (e) {
+            console.warn("Audio recorder instantiation error:", e);
+            mediaRecorder = null;
+        }
+
+        if (mediaRecorder) {
+            mediaRecorder.ondataavailable = event => {
+                if (event.data && event.data.size > 0) audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const reader = new FileReader();
+
+                reader.onloadend = () => {
+                    dispatchBiometricsPayload(imageData, reader.result);
+                };
+
+                reader.readAsDataURL(audioBlob);
+            };
+
+            mediaRecorder.start();
+            setTimeout(() => {
+                if (mediaRecorder && mediaRecorder.state === "recording") {
+                    mediaRecorder.stop();
+                }
+            }, AUDIO_RECORD_MS);
+        } else {
+            // Fallback: Send payload without audio if recorder is unavailable
+            dispatchBiometricsPayload(imageData, null);
+        }
+    }
+
+    function dispatchBiometricsPayload(imageData, audioData) {
+        fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                image_data: imageData,
+                audio_data: audioData,
+                liveness_passed: dynamicLivenessPassed
+            })
+        })
+        .then(async res => {
+            const data = await res.json();
+            return { status: res.status, data };
+        })
+        .then(({ status, data }) => {
+            outerLoader.style.display = 'none';
+
+            if (data.success) {
+                if (scanInterval) clearInterval(scanInterval);
+
+                // Stop hardware stream tracks upon successful authentication
+                if (cameraInstance && typeof cameraInstance.stop === 'function') {
+                    cameraInstance.stop();
+                }
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                }
+
+                statusMsg.innerText = `✓ Murakaza neza, ${data.username}! (${data.confidence}% Match)`;
+                statusMsg.style.color = "#2ef8a0";
+
+                setTimeout(() => { 
+                    window.location.href = data.redirect || "/dashboard"; 
+                }, 600);
+            } else {
+                if (status === 429) {
+                    statusMsg.innerText = "⏳ Tegereza gato ugerageze...";
+                    statusMsg.style.color = "#a855f7";
+                } else {
+                    statusMsg.innerText = "🔍 " + (data.message || "Ntidushoboye kukoza. Ongera ugerageze.");
+                    statusMsg.style.color = "#fbbf24";
+                }
+
+                setTimeout(() => { isProcessing = false; }, 800);
+            }
+        })
+        .catch(err => {
+            outerLoader.style.display = 'none';
+            statusMsg.innerText = "Server Error: " + err.message;
+            statusMsg.style.color = "#f87171";
+
+            setTimeout(() => { isProcessing = false; }, 800);
+        });
+    }
+</script>
+{% endblock %}

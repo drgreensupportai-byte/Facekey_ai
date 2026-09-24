@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block title %}System Administration & Control Panel - FaceKey AI{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 1100px; margin: 0 auto; text-align: left; padding: 2rem;">
+    <!-- Dashboard Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem; color: #f8fafc;">⚡ FaceKey AI System Control</h2>
+            <p style="margin: 0.2rem 0 0 0; color: #94a3b8; font-size: 0.9rem;">Full Administrative Control & Real-time Biometric Monitoring</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="/admin/train" class="btn" style="background-color: #0284c7; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: 500; display: inline-flex; align-items: center;">
+                🤖 AI Retraining Module
+            </a>
+            <a href="/dashboard" class="btn" style="background-color: #334155; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: 500; display: inline-flex; align-items: center;">User Dashboard</a>
+            <a href="/logout" class="btn" style="background-color: #ef4444; color: white; padding: 0.5rem 1rem; text-decoration: none; border-radius: 6px; font-size: 0.85rem; font-weight: 500; display: inline-flex; align-items: center;">Logout</a>
+        </div>
+    </div>
+
+    <!-- Quick Metrics Overview -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <div style="background: #1e293b; padding: 1.2rem; border-radius: 8px; border-left: 4px solid #38bdf8;">
+            <span style="color: #94a3b8; font-size: 0.85rem; display: block;">Total Registered Users</span>
+            <strong style="font-size: 1.8rem; color: #f8fafc;">{{ total_users | default(0) }}</strong>
+        </div>
+        <div style="background: #1e293b; padding: 1.2rem; border-radius: 8px; border-left: 4px solid #34d399;">
+            <span style="color: #94a3b8; font-size: 0.85rem; display: block;">Successful Logins</span>
+            <strong id="metric-success" style="font-size: 1.8rem; color: #34d399;">{{ successful_logins | default(0) }}</strong>
+        </div>
+        <div style="background: #1e293b; padding: 1.2rem; border-radius: 8px; border-left: 4px solid #f87171;">
+            <span style="color: #94a3b8; font-size: 0.85rem; display: block;">Failed Attempts</span>
+            <strong id="metric-failed" style="font-size: 1.8rem; color: #f87171;">{{ failed_attempts | default(0) }}</strong>
+        </div>
+        <div style="background: #1e293b; padding: 1.2rem; border-radius: 8px; border-left: 4px solid #fbbf24;">
+            <span style="color: #94a3b8; font-size: 0.85rem; display: block;">System Status</span>
+            <strong style="font-size: 1.2rem; color: #2ef8a0;">ACTIVE / ONLINE</strong>
+        </div>
+    </div>
+
+    <!-- Live Event Stream Feed -->
+    <div style="margin-bottom: 2rem; background: #0f172a; border: 1px solid #0284c7; border-radius: 8px; padding: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h4 style="margin: 0; color: #38bdf8; display: flex; align-items: center; gap: 0.5rem;">
+                <span style="width: 10px; height: 10px; background: #2ef8a0; border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite;"></span>
+                Live Biometric Event Stream (SSE)
+            </h4>
+            <span style="font-size: 0.75rem; color: #64748b;">Real-time feed</span>
+        </div>
+        <div id="live-stream-box" style="height: 140px; overflow-y: auto; font-family: 'Fira Code', 'Courier New', monospace; font-size: 0.82rem; background: #020617; padding: 0.75rem; border-radius: 6px; border: 1px solid #1e293b; color: #94a3b8;">
+            <div style="color: #64748b;">[System] Listening for real-time authentication events...</div>
+        </div>
+    </div>
+
+    <!-- User Management Table -->
+    <div style="margin-bottom: 2.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="margin: 0; color: #f8fafc;">👥 User Account & Biometric Control</h3>
+        </div>
+        <div style="overflow-x: auto; background: #0f172a; border-radius: 8px; border: 1px solid #334155;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="background-color: #1e293b; border-bottom: 2px solid #334155; color: #f8fafc;">
+                        <th style="padding: 0.8rem 1rem;">ID</th>
+                        <th style="padding: 0.8rem 1rem;">User Profile</th>
+                        <th style="padding: 0.8rem 1rem;">Email</th>
+                        <th style="padding: 0.8rem 1rem;">Biometrics Stored</th>
+                        <th style="padding: 0.8rem 1rem;">Role</th>
+                        <th style="padding: 0.8rem 1rem; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr style="border-bottom: 1px solid #1e293b; transition: background-color 0.15s ease;" onmouseover="this.style.backgroundColor='rgba(51, 65, 85, 0.3)'" onmouseout="this.style.backgroundColor='transparent'">
+                        <td style="padding: 0.8rem 1rem; color: #64748b; font-family: monospace;">#{{ u.id }}</td>
+                        <td style="padding: 0.8rem 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <img src="{{ url_for('serve_dataset_image', filename=u.username ~ '.jpg') }}" 
+                                     alt="{{ u.username }}" 
+                                     style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #0284c7;"
+                                     onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ u.username | urlencode }}&background=0284c7&color=fff';">
+                                <strong style="color: #f8fafc;">{{ u.username }}</strong>
+                            </div>
+                        </td>
+                        <td style="padding: 0.8rem 1rem; color: #94a3b8;">{{ u.email }}</td>
+                        <td style="padding: 0.8rem 1rem;">
+                            {% if u.encrypted_biometric_template %}
+                                <span style="color: #2ef8a0; font-size: 0.85rem;">📷 Face</span>
+                            {% endif %}
+                            {% if u.encrypted_voice_template %}
+                                <span style="color: #38bdf8; font-size: 0.85rem; margin-left: 0.4rem;">🎙️ Voice</span>
+                            {% endif %}
+                            {% if not u.encrypted_biometric_template and not u.encrypted_voice_template %}
+                                <span style="color: #64748b; font-size: 0.85rem;">None</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.8rem 1rem;">
+                            {% if u.is_admin %}
+                                <span style="background: #065f46; color: #34d399; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">ADMIN</span>
+                            {% else %}
+                                <span style="background: #334155; color: #cbd5e1; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem;">USER</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.8rem 1rem; text-align: center;">
+                            <button onclick="retrainUser({{ u.id }})" class="btn" style="padding: 0.35rem 0.7rem; font-size: 0.8rem; background-color: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 0.3rem;">Retrain AI</button>
+                            {% if not u.is_admin %}
+                                <button onclick="deleteUser({{ u.id }})" class="btn" style="padding: 0.35rem 0.7rem; font-size: 0.8rem; background-color: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer;">Delete</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="padding: 1.5rem; text-align: center; color: #64748b;">No registered users in system database.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Authentication Logs Section -->
+    <div>
+        <h3 style="margin-bottom: 1rem; color: #f8fafc;">📜 System Authentication & Audit Logs</h3>
+        <div style="overflow-x: auto; background: #0f172a; border-radius: 8px; border: 1px solid #334155;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="background-color: #1e293b; border-bottom: 2px solid #334155; color: #f8fafc;">
+                        <th style="padding: 0.8rem 1rem;">Log ID</th>
+                        <th style="padding: 0.8rem 1rem;">User ID</th>
+                        <th style="padding: 0.8rem 1rem;">Event Type</th>
+                        <th style="padding: 0.8rem 1rem;">Status</th>
+                        <th style="padding: 0.8rem 1rem;">Confidence</th>
+                        <th style="padding: 0.8rem 1rem;">Execution Time</th>
+                        <th style="padding: 0.8rem 1rem;">Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody id="audit-logs-body">
+                    {% for log in logs %}
+                    <tr style="border-bottom: 1px solid #1e293b; transition: background-color 0.15s ease;" onmouseover="this.style.backgroundColor='rgba(51, 65, 85, 0.3)'" onmouseout="this.style.backgroundColor='transparent'">
+                        <td style="padding: 0.8rem 1rem; color: #64748b; font-family: monospace;">#{{ log.id }}</td>
+                        <td style="padding: 0.8rem 1rem; color: #f8fafc;">
+                            {% if log.user_id %}
+                                User #{{ log.user_id }}
+                            {% else %}
+                                <span style="color: #64748b;">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.8rem 1rem; color: #cbd5e1;">{{ log.event_type }}</td>
+                        <td style="padding: 0.8rem 1rem;">
+                            {% if log.success %}
+                                <span style="color: #2ef8a0; font-weight: bold;">SUCCESS</span>
+                            {% else %}
+                                <span style="color: #ef4444; font-weight: bold;">FAILED</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.8rem 1rem; color: #38bdf8; font-weight: bold;">
+                            {{ (log.confidence_score * 100) | round(1) if log.confidence_score is not none else 'N/A' }}{% if log.confidence_score is not none %}%{% endif %}
+                        </td>
+                        <td style="padding: 0.8rem 1rem; color: #a855f7; font-size: 0.85rem;">
+                            {{ log.processing_time_ms if log.processing_time_ms is not none else '--' }} ms
+                        </td>
+                        <td style="padding: 0.8rem 1rem; color: #94a3b8; font-size: 0.85rem;">
+                            {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '' }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" style="padding: 1.5rem; text-align: center; color: #64748b;">No authentication logs generated yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes pulse {
+        0% { opacity: 0.4; transform: scale(0.98); }
+        50% { opacity: 1; transform: scale(1.05); }
+        100% { opacity: 0.4; transform: scale(0.98); }
+    }
+</style>
+
+<script>
+    const csrfToken = "{{ csrf_token() if csrf_token is defined else '' }}";
+
+    function getFetchHeaders(method) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (csrfToken) {
+            headers['X-CSRFToken'] = csrfToken;
+        }
+        return headers;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    const eventSource = new EventSource("/admin/stream");
+    const liveStreamBox = document.getElementById("live-stream-box");
+    const metricSuccess = document.getElementById("metric-success");
+    const metricFailed = document.getElementById("metric-failed");
+    const auditLogsBody = document.getElementById("audit-logs-body");
+
+    eventSource.onmessage = function(event) {
+        try {
+            const data = JSON.parse(event.data);
+            const eventRow = document.createElement("div");
+            
+            const isSuccess = data.status === 'SUCCESS';
+            const color = isSuccess ? '#2ef8a0' : '#ef4444';
+            
+            eventRow.style.marginBottom = "4px";
+            eventRow.innerHTML = `<span style="color: #64748b;">[${escapeHtml(data.time) || 'NOW'}]</span> Log <strong style="color:#38bdf8">${escapeHtml(data.auth_id) || '--'}</strong>: User <strong style="color:#f8fafc">${escapeHtml(data.user) || 'Unknown'}</strong> - Status: <strong style="color:${color}">${escapeHtml(data.status)}</strong> (${escapeHtml(data.method) || 'Biometric'}) [Liveness: ${escapeHtml(data.liveness) || 'N/A'}] - Speed: <span style="color:#a855f7">${escapeHtml(data.proc_time) || '--'}</span>`;
+            
+            liveStreamBox.appendChild(eventRow);
+            liveStreamBox.scrollTop = liveStreamBox.scrollHeight;
+
+            if (isSuccess && metricSuccess) {
+                metricSuccess.innerText = parseInt(metricSuccess.innerText || 0, 10) + 1;
+            } else if (!isSuccess && metricFailed) {
+                metricFailed.innerText = parseInt(metricFailed.innerText || 0, 10) + 1;
+            }
+
+            if (auditLogsBody) {
+                const newRow = document.createElement("tr");
+                newRow.style.borderBottom = "1px solid #1e293b";
+                newRow.style.backgroundColor = isSuccess ? "rgba(46, 248, 160, 0.05)" : "rgba(239, 68, 68, 0.05)";
+                newRow.innerHTML = `
+                    <td style="padding: 0.8rem 1rem; color: #64748b; font-family: monospace;">${escapeHtml(data.auth_id) || '--'}</td>
+                    <td style="padding: 0.8rem 1rem; color: #f8fafc;">${escapeHtml(data.user) || 'Unknown'}</td>
+                    <td style="padding: 0.8rem 1rem; color: #cbd5e1;">${escapeHtml(data.method) || 'N/A'}</td>
+                    <td style="padding: 0.8rem 1rem;"><span style="color: ${color}; font-weight: bold;">${escapeHtml(data.status)}</span></td>
+                    <td style="padding: 0.8rem 1rem; color: #38bdf8; font-weight: bold;">${data.confidence ? escapeHtml(data.confidence) + '%' : 'N/A'}</td>
+                    <td style="padding: 0.8rem 1rem; color: #a855f7; font-size: 0.85rem;">${escapeHtml(data.proc_time) || '--'}</td>
+                    <td style="padding: 0.8rem 1rem; color: #94a3b8; font-size: 0.85rem;">Just now</td>
+                `;
+                
+                if (auditLogsBody.children.length === 1 && auditLogsBody.children[0].cells.length === 1) {
+                    auditLogsBody.innerHTML = '';
+                }
+                
+                auditLogsBody.insertBefore(newRow, auditLogsBody.firstChild);
+            }
+        } catch (err) {
+            console.error("SSE parse error:", err);
+        }
+    };
+
+    eventSource.onerror = function() {
+        console.warn("SSE connection lost. Reconnecting...");
+    };
+
+    function retrainUser(userId) {
+        if (!confirm("Are you sure you want to regenerate the biometric embeddings for this user from the dataset image?")) return;
+        
+        fetch(`/admin/retrain/${userId}`, { 
+            method: 'POST',
+            headers: getFetchHeaders('POST')
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) location.reload();
+        })
+        .catch(err => alert("Error retraining AI model: " + err));
+    }
+
+    function deleteUser(userId) {
+        if (!confirm("Are you sure you want to permanently delete this user, their biometric templates, and their dataset image?")) return;
+
+        fetch(`/admin/delete/${userId}`, { 
+            method: 'DELETE',
+            headers: getFetchHeaders('DELETE')
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.message);
+            if (data.success) location.reload();
+        })
+        .catch(err => alert("Error deleting user: " + err));
+    }
+</script>
+{% endblock %}
